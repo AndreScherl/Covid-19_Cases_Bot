@@ -83,6 +83,17 @@ def info_for_landkreis(lk):
     infotext += "(" + lkdaten['last_update'] + ")"
     return infotext
 
+def update_landkreise():
+    updatedlks = []
+    for key, value in cases_and_recipients.items():
+        newdata = get_rki_cases(key)
+        if (newdata['cases'] != value['cases']) or (newdata['deaths'] != value['deaths']):
+            newdata['recipients'] = cases_and_recipients[key]['recipients']
+            cases_and_recipients[key] = newdata
+            updatedlks.append(key)
+    save_data()
+    return updatedlks
+
 # Write data to file.
 def save_data():
     jsondata = json.dumps(cases_and_recipients)

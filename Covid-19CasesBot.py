@@ -3,8 +3,9 @@
 
 import config
 import logging
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode, Bot
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, Job, JobQueue
+from threading import Timer
 import casesdata
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -19,13 +20,18 @@ def start(update, context):
     """Send a message when the command /start is issued."""
     user = update.message.from_user
     update.message.reply_text(
-        'Hallo ' + user.first_name + '!\n'
-        'Gib einen gewünschten Lankreis ein.')
+        'Hallo ' + user.first_name + ',\n'
+        'ich werde dir für deine gewünschten Landkreise die aktuellen Zahlen des RKI schicken, wenn diese sich verändern.\n'
+        'Mit dem Befehl /hilfe erfährst du, wie ich dir helfen kann.\n\n'
+        'Welcher Landkreis interessiert dich als erstes?')
     return ASKFORLK
 
 def help(update, context):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    update.message.reply_text('*Hilfe*\n'
+        '/neuerlk -> Damit kannst du einen weiteren Landkreis hinzufügen.\n'
+        '/entfernelk -> So entfernst du einen Landkreis wieder von deiner Liste.\n'
+        '/status -> Du erhältst eine Liste der aktuellen Zahlen aller deiner Landkreise.', parse_mode=ParseMode.MARKDOWN)
 
 def newlk(update, context):
     update.message.reply_text('Gib einen gewünschten Landkreis ein.')
@@ -86,6 +92,13 @@ def status(update, context):
             'Du hast noch keinen gewünschten Landkreis angegeben.\n'
             'Verwende dafür den Befehl /newlk')
 
+def process_case_updates(context):
+    updatedlk = casesdata.update_landkreise()
+    if len(updatedlk) > 0:
+        for ulk in updatedlk:
+            for rec in casesdata.cases_and_recipients[ulk]['recipients']:
+                context.bot.send_message(rec, parse_mode=ParseMode.MARKDOWN, text=casesdata.info_for_landkreis(ulk))
+
 def cancel(update, context):
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
@@ -110,15 +123,15 @@ def main():
 
     # on different commands - answer in Telegram
     # dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help))
+    dp.add_handler(CommandHandler("hilfe", help))
     dp.add_handler(CommandHandler("status", status))
 
     # Add conversation handler with the states ASKFORLK, UNIQUELK, MULTIPLELK
     conv_handler = ConversationHandler(
         entry_points = [
             CommandHandler('start', start), 
-            CommandHandler('newlk', newlk),
-            CommandHandler('removelk', removelk)
+            CommandHandler('neuerlk', newlk),
+            CommandHandler('entfernelk', removelk)
         ],
         states = {
             ASKFORLK: [MessageHandler(Filters.text, ask_for_landkreis)],
@@ -137,6 +150,12 @@ def main():
     
     # Start the Bot
     updater.start_polling()
+
+    # Check for updates of rki numbers and notify users every hour (3600s).
+    cronjob = JobQueue()
+    cronjob.set_dispatcher(dp)
+    cronjob.run_repeating(process_case_updates, 3600)
+    cronjob.start()
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since

@@ -90,7 +90,7 @@ def status(update, context):
     else:
         update.message.reply_text(
             'Du hast noch keinen gewünschten Landkreis angegeben.\n'
-            'Verwende dafür den Befehl /newlk')
+            'Verwende dafür den Befehl /neuerlk')
 
 def process_case_updates(context):
     updatedlk = casesdata.update_landkreise()

@@ -7,3 +7,5 @@ Folgende Befehle werden unterstützt:
 * /neuerlk -> Fügt einen weiteren Landkreis hinzu
 * /entfernelk -> Entfernt einen Landkreis aus der nutzerspzifischen Liste
 * /status -> Gibt die aktuellen Zahlen zurück
+
+Der Bot wurde mit dem Python Paket https://python-telegram-bot.org/ erstellt.

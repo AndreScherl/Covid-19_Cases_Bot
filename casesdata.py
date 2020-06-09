@@ -20,6 +20,7 @@ def get_rki_cases(landkreis):
 
     resp = requests.get(url, params)
     data = resp.json()['features'][0]['attributes']
+    data['cases7_per_100k'] = round(data['cases7_per_100k'], 1)
     return data
 
 # Request to search for name in Landkreise database. Retrun array of results.

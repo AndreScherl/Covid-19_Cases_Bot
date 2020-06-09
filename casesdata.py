@@ -12,7 +12,7 @@ def get_rki_cases(landkreis):
     
     params = dict (
         where='GEN LIKE \'%' + landkreis + '%\'',
-        outFields='GEN,cases,deaths,last_update',
+        outFields='GEN,cases,deaths,cases7_per_100k,last_update',
         returnGeometry='false',
         outSR='4326',
         f='json'
@@ -55,6 +55,7 @@ def add_entry(lk, chatid):
         newlk = {
             'cases': cases['cases'],
             'deaths': cases['deaths'],
+            'cases7_per_100k': cases['cases7_per_100k'],
             'last_update': cases['last_update'],
             'recipients': [chatid]
         }
@@ -79,7 +80,8 @@ def info_for_landkreis(lk):
     lkdaten = cases_and_recipients[lk]
     infotext = "*" + lk + "* \n"
     infotext += str(lkdaten['cases']) + " Fälle, "
-    infotext += str(lkdaten['deaths']) + " Tote \n"
+    infotext += str(lkdaten['deaths']) + " Tote, \n"
+    infotext += str(lkdaten['cases7_per_100k']) + " Fälle pro 100.000 Einwohner in den letzten 7 Tagen\n"
     infotext += "(" + lkdaten['last_update'] + ")"
     return infotext
 
@@ -87,7 +89,7 @@ def update_landkreise():
     updatedlks = []
     for key, value in cases_and_recipients.items():
         newdata = get_rki_cases(key)
-        if (newdata['cases'] != value['cases']) or (newdata['deaths'] != value['deaths']):
+        if (newdata['cases'] != value['cases']) or (newdata['deaths'] != value['deaths']) or (newdata['cases7_per_100k'] != value['cases7_per_100k']):
             newdata['recipients'] = cases_and_recipients[key]['recipients']
             cases_and_recipients[key] = newdata
             updatedlks.append(key)

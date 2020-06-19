@@ -1,6 +1,7 @@
 # Covid-19 Cases Bot
 Dieser Telegram Bot fragt die Zahlen der bestätigten Infektionsfälle und der Todesfälle für gewünschte Landkreise ab. Bei Veränderungen dieser Zahlen, erhlaten die Nutzer eine Nachricht.
 Die Nutzer wählen nur die Landkreise aus, die sie interessieren.
+Hier geht's direkt zum Bot: https://t.me/covid19_cases_counter_bot
 
 Folgende Befehle werden unterstützt:
 * /start -> Startet den Bot

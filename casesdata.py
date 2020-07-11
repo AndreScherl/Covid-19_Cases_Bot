@@ -55,7 +55,9 @@ def add_entry(lk, chatid):
     else:
         newlk = {
             'cases': cases['cases'],
+            'delta_cases': 0,
             'deaths': cases['deaths'],
+            'delta_deaths': 0,
             'cases7_per_100k': cases['cases7_per_100k'],
             'last_update': cases['last_update'],
             'recipients': [chatid]
@@ -80,8 +82,14 @@ def lks_of_user(chatid):
 def info_for_landkreis(lk):
     lkdaten = cases_and_recipients[lk]
     infotext = "*" + lk + "* \n"
-    infotext += str(lkdaten['cases']) + " Fälle, "
-    infotext += str(lkdaten['deaths']) + " Tote, \n"
+    infotext += str(lkdaten['cases'])
+    if 'delta_cases' in lkdaten and lkdaten['delta_cases'] > 0:
+        infotext += " (+" + str(lkdaten['delta_cases']) + ")"
+    infotext += " Fälle, "
+    infotext += str(lkdaten['deaths'])
+    if 'delta_deaths' in lkdaten and lkdaten['delta_deaths'] > 0:
+        infotext += " (+" + str(lkdaten['delta_deaths']) + ")"
+    infotext += " Tote, \n"
     infotext += str(lkdaten['cases7_per_100k']) + " Fälle pro 100.000 Einwohner in den letzten 7 Tagen\n"
     infotext += "(" + lkdaten['last_update'] + ")"
     return infotext
@@ -90,7 +98,9 @@ def update_landkreise():
     updatedlks = []
     for key, value in cases_and_recipients.items():
         newdata = get_rki_cases(key)
-        if (newdata['cases'] != value['cases']) or (newdata['deaths'] != value['deaths']) or (abs(newdata['cases7_per_100k'] - value['cases7_per_100k']) >= 1):
+        if (newdata['cases'] != value['cases']) or (newdata['deaths'] != value['deaths']):
+            newdata['delta_cases'] = newdata['cases'] - value['cases']
+            newdata['delta_deaths'] = newdata['deaths'] - value['deaths']
             newdata['recipients'] = cases_and_recipients[key]['recipients']
             cases_and_recipients[key] = newdata
             updatedlks.append(key)

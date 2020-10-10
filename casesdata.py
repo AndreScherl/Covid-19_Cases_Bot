@@ -98,7 +98,7 @@ def update_landkreise():
     updatedlks = []
     for key, value in cases_and_recipients.items():
         newdata = get_rki_cases(key)
-        if (newdata['cases'] != value['cases']) or (newdata['deaths'] != value['deaths']):
+        if ((newdata['cases'] > 0) and (newdata['cases'] != value['cases'])) or ((newdata['deaths'] > 0) and (newdata['deaths'] != value['deaths'])):
             newdata['delta_cases'] = newdata['cases'] - value['cases']
             newdata['delta_deaths'] = newdata['deaths'] - value['deaths']
             newdata['recipients'] = cases_and_recipients[key]['recipients']

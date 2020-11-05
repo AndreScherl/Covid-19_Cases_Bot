@@ -3,10 +3,14 @@
 
 import config
 import logging
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode, Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, Job, JobQueue
+import html
+import json
+import traceback
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode, Bot, Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, Job, JobQueue, CallbackContext
 from threading import Timer
 import casesdata
+from telegram.error import Unauthorized
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,7 +101,10 @@ def process_case_updates(context):
     if len(updatedlk) > 0:
         for ulk in updatedlk:
             for rec in casesdata.cases_and_recipients[ulk]['recipients']:
-                context.bot.send_message(rec, parse_mode=ParseMode.MARKDOWN, text=casesdata.info_for_landkreis(ulk))
+                try: 
+                    context.bot.send_message(rec, parse_mode=ParseMode.MARKDOWN, text=casesdata.info_for_landkreis(ulk))
+                except Unauthorized:
+                    casesdata.remove_user(rec)
 
 def cancel(update, context):
     user = update.message.from_user
@@ -106,9 +113,33 @@ def cancel(update, context):
     
     return ConversationHandler.END
 
-def error(update, context):
-    """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
+def error(update: Update, context: CallbackContext) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+    # Log the error before we do anything else, so we can see it even if something breaks.
+    logger.error('Update "%s" caused error "%s"', update, context.error)
+
+    # traceback.format_exception returns the usual python message about an exception, but as a
+    # list of strings rather than a single string, so we have to join them together.
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = ''.join(tb_list)
+
+    # Build the message with some markup and additional information about what happened.
+    # You might need to add some logic to deal with messages longer than the 4096 character limit.
+    message = (
+        'An exception was raised while handling an update\n'
+        '<pre>update = {}</pre>\n\n'
+        '<pre>context.chat_data = {}</pre>\n\n'
+        '<pre>context.user_data = {}</pre>\n\n'
+        '<pre>{}</pre>'
+    ).format(
+        html.escape(json.dumps(update.to_dict(), indent=2, ensure_ascii=False)),
+        html.escape(str(context.chat_data)),
+        html.escape(str(context.user_data)),
+        html.escape(tb_string),
+    )
+
+    # Finally, send the message
+    context.bot.send_message(chat_id=config.developerchatid, text=message, parse_mode=ParseMode.HTML)
 
 def main():
 
@@ -154,7 +185,7 @@ def main():
     # Check for updates of rki numbers and notify users every hour (3600s).
     cronjob = JobQueue()
     cronjob.set_dispatcher(dp)
-    cronjob.run_repeating(process_case_updates, 3600)
+    cronjob.run_repeating(process_case_updates, 60)
     cronjob.start()
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,

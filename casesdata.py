@@ -79,6 +79,10 @@ def lks_of_user(chatid):
             userslks.append(key)
     return userslks
 
+def remove_user(chatid):
+    for userlk in lks_of_user(chatid):
+        remove_entry(userlk, chatid)
+
 def info_for_landkreis(lk):
     lkdaten = cases_and_recipients[lk]
     infotext = "*" + lk + "* \n"

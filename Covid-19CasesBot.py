@@ -185,7 +185,7 @@ def main():
     # Check for updates of rki numbers and notify users every hour (3600s).
     cronjob = JobQueue()
     cronjob.set_dispatcher(dp)
-    cronjob.run_repeating(process_case_updates, 60)
+    cronjob.run_repeating(process_case_updates, 3600)
     cronjob.start()
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,

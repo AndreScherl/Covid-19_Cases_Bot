@@ -106,6 +106,9 @@ def process_case_updates(context):
                 except Unauthorized:
                     casesdata.remove_user(rec)
 
+def force_update(update, context):
+    process_case_updates(context)
+
 def cancel(update, context):
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
@@ -156,6 +159,7 @@ def main():
     # dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("hilfe", help))
     dp.add_handler(CommandHandler("status", status))
+    dp.add_handler(CommandHandler("forceupdate", force_update))
 
     # Add conversation handler with the states ASKFORLK, UNIQUELK, MULTIPLELK
     conv_handler = ConversationHandler(
